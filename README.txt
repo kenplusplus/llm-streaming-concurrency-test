@@ -3,5 +3,8 @@
 
 ```
 python -m pip install -r requirements.txt
-python main.py
+
+# the number 10 is concurrent number
+python main.py -n 10
+
 ```

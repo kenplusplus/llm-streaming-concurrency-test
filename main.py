@@ -1,18 +1,15 @@
 import os
 import time
 import threading
+import argparse
 from openai import OpenAI
-import rich
 from rich.console import Group
 from rich.panel import Panel
 from rich.live import Live
 from rich.progress import (
-    BarColumn,
     Progress,
-    SpinnerColumn,
     TextColumn,
     TimeElapsedColumn,
-    TaskProgressColumn
 )
 
 CURR_DIR=os.path.dirname(__file__)
@@ -96,11 +93,13 @@ class InferStreamThread(threading.Thread):
         self._is_completed = True
 
 def start():
+    concurrent_number = parse_args()
     questions = load_questions()
 
-    if len(questions) < MAX_CONCURRENT_NUM:
+    if len(questions) < concurrent_number:
         print("ERROR: there are %d questions, not enough used for concurrent %d" % \
-              (len(questions), MAX_CONCURRENT_NUM))
+              (len(questions), concurrent_number))
+        exit(1)
 
     with Progress(
         TextColumn("[progress.description]{task.id}"),
@@ -109,7 +108,7 @@ def start():
     ) as progress:
         infer_streams = []
 
-        for index in range(MAX_CONCURRENT_NUM):
+        for index in range(concurrent_number):
             question = questions[index]
             task_id = progress.add_task(question, total=100)
             item = InferStreamThread(task_id, question)
@@ -132,11 +131,20 @@ def start():
             total_throughput += (len(item.answer_complete) / item.response_time)
 
         print("\n")
-        print("Average [Concurrent: %d]" % MAX_CONCURRENT_NUM)
+        print("Average [Concurrent: %d]" % concurrent_number)
         print("=============================================== ")
         print("  First Token Time (seconds): %f" % (total_ttft / len(infer_streams)))
         print("  Throughput (tokens/second): %f" % (total_throughput / len(infer_streams)))
         print("\n")
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='LLM Concurrent Utility')
+    parser.add_argument('-n','--concurrent-number',
+                        help='Max Concurrent NUmber',
+                        type=int,
+                        default=MAX_CONCURRENT_NUM)
+    args = vars(parser.parse_args())
+    return args["concurrent_number"]
 
 if __name__ == "__main__":
     start()
