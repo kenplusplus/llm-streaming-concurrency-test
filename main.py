@@ -20,7 +20,7 @@ LLM_MODEL_NAME="chatglm2-6b"
 
 client = OpenAI(api_key=LLM_API_KEY, base_url=LLM_SERVER_URL)
 
-def load_questions():
+def load_questions() -> list:
     questions = []
     with open(os.path.join(CURR_DIR, "questions.txt"), "rt") as file:
         for line in file.readlines():
@@ -29,22 +29,23 @@ def load_questions():
                 continue
             questions.append(line)
     return questions
+
 class InferStreamThread(threading.Thread):
 
-    def __init__(self, task_id:int, question):
+    def __init__(self, task_id:int, question:str) -> None:
         threading.Thread.__init__(self)
-        self._start_time = None
-        self._start_time_first_token = None
-        self._response_time = None
-        self._time_to_first_token = None
-        self._question = question
-        self._answer_complete = ""
-        self._answer_chunks = []
-        self._is_completed = False
+        self._start_time:float = None
+        self._start_time_first_token:float = None
+        self._response_time:float = None
+        self._time_to_first_token:float = None
+        self._question:str = question
+        self._answer_complete:str = ""
+        self._answer_chunks:list = []
+        self._is_completed:bool = False
         self._task_id = task_id
 
     @property
-    def is_completed(self):
+    def is_completed(self) -> bool:
         return self._is_completed
 
     @property
@@ -52,11 +53,11 @@ class InferStreamThread(threading.Thread):
         return self._answer_complete
 
     @property
-    def response_time(self):
+    def response_time(self) -> float:
         return self._response_time
 
     @property
-    def time_to_first_token(self):
+    def time_to_first_token(self) -> float:
         return self._start_time_first_token - self._start_time
 
     @property
