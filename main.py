@@ -90,7 +90,7 @@ class InferStreamThread(threading.Thread):
         self._response_time = time.time() - self._start_time
 
         # print the time delay and text received
-        print(f"[%s]: total {self._response_time:.2f} seconds, First Token Time: {self.time_to_first_token:.2f} seconds, Throughput {len(self._answer_complete) / self._response_time:.2f} tokens/second" % self._question)
+        print(f"#{self.task_id:2d}-[{self._question:s}]: Total {self._response_time:3.2f} seconds, First Token Time: {self.time_to_first_token:3.2f} seconds, Throughput {len(self._answer_complete) / self._response_time:3.2f} tokens/second")
         self._is_completed = True
 
 def start():
