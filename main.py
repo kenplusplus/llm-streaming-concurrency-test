@@ -20,9 +20,9 @@ LLM_MODEL_NAME="chatglm2-6b"
 
 client = OpenAI(api_key=LLM_API_KEY, base_url=LLM_SERVER_URL)
 
-def load_questions() -> list:
+def load_questions(question_file) -> list:
     questions = []
-    with open(os.path.join(CURR_DIR, "questions.txt"), "rt") as file:
+    with open(os.path.join(CURR_DIR, question_file), "rt") as file:
         for line in file.readlines():
             line = line.strip()
             if len(line) == 0:
@@ -94,8 +94,8 @@ class InferStreamThread(threading.Thread):
         self._is_completed = True
 
 def start():
-    concurrent_number = parse_args()
-    questions = load_questions()
+    concurrent_number, question_file = parse_args()
+    questions = load_questions(question_file)
 
     if len(questions) < concurrent_number:
         print("ERROR: there are %d questions, not enough used for concurrent %d" % \
@@ -144,8 +144,12 @@ def parse_args():
                         help='Max Concurrent NUmber',
                         type=int,
                         default=MAX_CONCURRENT_NUM)
+    parser.add_argument('-q','--question',
+                        help='question file',
+                        type=str,
+                        default="questions.txt")    
     args = vars(parser.parse_args())
-    return args["concurrent_number"]
+    return (args["concurrent_number"], args['question'])
 
 if __name__ == "__main__":
     start()
