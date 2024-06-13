@@ -49,6 +49,12 @@ class InferStreamThread(threading.Thread):
         return self._is_completed
 
     @property
+    def title(self) -> str:
+        if len(self._question) > 20:
+            return self._question[:20] + "..."
+        return self._question
+
+    @property
     def answer_complete(self) -> str:
         return self._answer_complete
 
@@ -90,7 +96,7 @@ class InferStreamThread(threading.Thread):
         self._response_time = time.time() - self._start_time
 
         # print the time delay and text received
-        print(f"#{self.task_id:2d}-[{self._question:s}]: Total {self._response_time:3.2f} seconds, First Token Time: {self.time_to_first_token:3.2f} seconds, Throughput {len(self._answer_complete) / self._response_time:3.2f} tokens/second")
+        print(f"#{self.task_id:2d}-[{self.title:s}]: Total {self._response_time:3.2f} seconds, First Token Time: {self.time_to_first_token:3.2f} seconds, Throughput {len(self._answer_complete) / self._response_time:3.2f} tokens/second")
         self._is_completed = True
 
 def start():
@@ -147,7 +153,7 @@ def parse_args():
     parser.add_argument('-q','--question',
                         help='question file',
                         type=str,
-                        default="questions.txt")    
+                        default="questions.txt")
     args = vars(parser.parse_args())
     return (args["concurrent_number"], args['question'])
 
