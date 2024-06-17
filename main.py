@@ -18,8 +18,6 @@ LLM_API_KEY="EMPTY"
 MAX_CONCURRENT_NUM=5
 LLM_MODEL_NAME="chatglm2-6b"
 
-client = OpenAI(api_key=LLM_API_KEY, base_url=LLM_SERVER_URL)
-
 def load_questions(question_file) -> list:
     questions = []
     with open(os.path.join(CURR_DIR, question_file), "rt") as file:
@@ -32,7 +30,7 @@ def load_questions(question_file) -> list:
 
 class InferStreamThread(threading.Thread):
 
-    def __init__(self, task_id:int, question:str) -> None:
+    def __init__(self, task_id:int, question:str, server:str, model:str) -> None:
         threading.Thread.__init__(self)
         self._start_time:float = None
         self._start_time_first_token:float = None
@@ -43,6 +41,9 @@ class InferStreamThread(threading.Thread):
         self._answer_chunks:list = []
         self._is_completed:bool = False
         self._task_id = task_id
+        self._server = server
+        self._model = model
+        self._client = OpenAI(api_key=LLM_API_KEY, base_url=self._server)
 
     @property
     def is_completed(self) -> bool:
@@ -75,8 +76,8 @@ class InferStreamThread(threading.Thread):
         self._start_time = time.time()
 
         # send a ChatCompletion request to count to 100
-        response = client.chat.completions.create(
-            model=LLM_MODEL_NAME,
+        response = self._client.chat.completions.create(
+            model=self._model,
             messages=[
                 {'role': 'user', 'content': self._question}
             ],
@@ -100,7 +101,7 @@ class InferStreamThread(threading.Thread):
         self._is_completed = True
 
 def start():
-    concurrent_number, question_file = parse_args()
+    concurrent_number, question_file, server, model = parse_args()
     questions = load_questions(question_file)
 
     if len(questions) < concurrent_number:
@@ -118,14 +119,14 @@ def start():
         for index in range(concurrent_number):
             question = questions[index]
             task_id = progress.add_task(question, total=100)
-            item = InferStreamThread(task_id, question)
+            item = InferStreamThread(task_id, question, server, model)
             infer_streams.append(item)
             item.start()
 
         while not progress.finished:
             for item in infer_streams:
-                answer_piece = item.answer_complete[-40:].\
-                    replace('\n', ' ').replace('\r', '')
+                answer_piece = item.answer_complete.replace('\n', ' ').replace('\r', '')
+                answer_piece = answer_piece[-40:]
                 progress.update(item.task_id, description=answer_piece)
                 if item.is_completed:
                     progress.update(item.task_id, description=answer_piece + "[done]", completed=100)
@@ -146,6 +147,14 @@ def start():
 
 def parse_args():
     parser = argparse.ArgumentParser(description='LLM Concurrent Utility')
+    parser.add_argument('-s','--server',
+                        help='Server URL',
+                        type=str,
+                        default=LLM_SERVER_URL)
+    parser.add_argument('-m','--model',
+                        help='Model Name',
+                        type=str,
+                        default=LLM_MODEL_NAME)
     parser.add_argument('-n','--concurrent-number',
                         help='Max Concurrent NUmber',
                         type=int,
@@ -155,7 +164,7 @@ def parse_args():
                         type=str,
                         default="questions.txt")
     args = vars(parser.parse_args())
-    return (args["concurrent_number"], args['question'])
+    return (args["concurrent_number"], args['question'], args['server'], args['model'])
 
 if __name__ == "__main__":
     start()
