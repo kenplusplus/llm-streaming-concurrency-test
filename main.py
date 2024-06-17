@@ -30,7 +30,7 @@ def load_questions(question_file) -> list:
 
 class InferStreamThread(threading.Thread):
 
-    def __init__(self, task_id:int, question:str, server:str, model:str) -> None:
+    def __init__(self, task_id:int, question:str, server:str, model:str, key:str) -> None:
         threading.Thread.__init__(self)
         self._start_time:float = None
         self._start_time_first_token:float = None
@@ -40,10 +40,10 @@ class InferStreamThread(threading.Thread):
         self._answer_complete:str = ""
         self._answer_chunks:list = []
         self._is_completed:bool = False
-        self._task_id = task_id
-        self._server = server
-        self._model = model
-        self._client = OpenAI(api_key=LLM_API_KEY, base_url=self._server)
+        self._task_id:int = task_id
+        self._server:str = server
+        self._model:str = model
+        self._client = OpenAI(api_key=key, base_url=self._server)
 
     @property
     def is_completed(self) -> bool:
@@ -68,10 +68,10 @@ class InferStreamThread(threading.Thread):
         return self._start_time_first_token - self._start_time
 
     @property
-    def task_id(self):
+    def task_id(self) -> int:
         return self._task_id
 
-    def run(self):
+    def run(self) -> None:
         # record the time before the request is sent
         self._start_time = time.time()
 
@@ -101,8 +101,15 @@ class InferStreamThread(threading.Thread):
         self._is_completed = True
 
 def start():
-    concurrent_number, question_file, server, model = parse_args()
+    concurrent_number, question_file, server, model, key = parse_args()
     questions = load_questions(question_file)
+
+    print("=========================================")
+    print(f" Server     : {server:s}")
+    print(f" Model      : {model}")
+    print(f" Concurrent : {concurrent_number}")
+    print(f" Question   : {question_file}")
+    print("=========================================")
 
     if len(questions) < concurrent_number:
         print("ERROR: there are %d questions, not enough used for concurrent %d" % \
@@ -119,7 +126,7 @@ def start():
         for index in range(concurrent_number):
             question = questions[index]
             task_id = progress.add_task(question, total=100)
-            item = InferStreamThread(task_id, question, server, model)
+            item = InferStreamThread(task_id, question, server, model, key)
             infer_streams.append(item)
             item.start()
 
@@ -155,6 +162,10 @@ def parse_args():
                         help='Model Name',
                         type=str,
                         default=LLM_MODEL_NAME)
+    parser.add_argument('-k','--key',
+                        help='API Key',
+                        type=str,
+                        default=LLM_API_KEY)
     parser.add_argument('-n','--concurrent-number',
                         help='Max Concurrent NUmber',
                         type=int,
@@ -164,7 +175,7 @@ def parse_args():
                         type=str,
                         default="questions.txt")
     args = vars(parser.parse_args())
-    return (args["concurrent_number"], args['question'], args['server'], args['model'])
+    return (args["concurrent_number"], args['question'], args['server'], args['model'], args['key'])
 
 if __name__ == "__main__":
     start()
