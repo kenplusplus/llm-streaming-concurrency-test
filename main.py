@@ -111,10 +111,15 @@ def start():
     print(f" Question   : {question_file}")
     print("=========================================")
 
+    total_questions = []
+
     if len(questions) < concurrent_number:
-        print("ERROR: there are %d questions, not enough used for concurrent %d" % \
-              (len(questions), concurrent_number))
-        exit(1)
+        for _ in range(int(concurrent_number / len(questions)) + 1):
+            total_questions += questions
+    else:
+        total_questions = questions
+
+    print(f"total questions: {len(total_questions)}")
 
     with Progress(
         TextColumn("[progress.description]{task.id}"),
@@ -124,7 +129,7 @@ def start():
         infer_streams = []
 
         for index in range(concurrent_number):
-            question = questions[index]
+            question = total_questions[index]
             task_id = progress.add_task(question, total=100)
             item = InferStreamThread(task_id, question, server, model, key)
             infer_streams.append(item)
