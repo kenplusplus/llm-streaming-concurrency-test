@@ -97,7 +97,7 @@ class InferStreamThread(threading.Thread):
         self._response_time = time.time() - self._start_time
 
         # print the time delay and text received
-        print(f"#{self.task_id:2d}-[{self.title:s}]: Total {self._response_time:3.2f} seconds, First Token Time: {self.time_to_first_token:3.2f} seconds, Throughput {len(self._answer_complete) / self._response_time:3.2f} tokens/second")
+        print(f"#{self.task_id:2d}-[{self.title:s}]: Total {self._response_time:3.2f} seconds, First Token Time: {self.time_to_first_token:3.2f} seconds, Throughput {len(self._answer_complete) / self._response_time:3.2f} chars/second")
         self._is_completed = True
 
 def start():
@@ -118,8 +118,6 @@ def start():
             total_questions += questions
     else:
         total_questions = questions
-
-    print(f"total questions: {len(total_questions)}")
 
     with Progress(
         TextColumn("[progress.description]{task.id}"),
@@ -154,7 +152,7 @@ def start():
         print("Average [Concurrent: %d]" % concurrent_number)
         print("=============================================== ")
         print("  First Token Time (seconds): %f" % (total_ttft / len(infer_streams)))
-        print("  Throughput (tokens/second): %f" % (total_throughput / len(infer_streams)))
+        print("  Throughput (chars/second): %f" % (total_throughput / len(infer_streams)))
         print("\n")
 
 def parse_args():
